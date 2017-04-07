@@ -1,19 +1,21 @@
 // ==UserScript==
-// @name         115 img show
+// @name         115 helper
 // @namespace    jimdev5277@gmail.com
-// @version      0.1
-// @description  115网盘更好的查看图片
+// @version      0.2
+// @description  115网盘帮手-一键打开大图 一键加速所有视频
 // @author       jimzhuang
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @create       2017-01-31
-// @lastmodified 2017-01-31
+// @lastmodified 2017-04-08
 // @match        http://115.com/*
 // @require  	 http://code.jquery.com/jquery-1.11.3.min.js
 // @require  	 http://cdn.bootcss.com/layer/3.0.1/layer.js
+// @require      https://egoistian.com/corner-notie/notie.js?v=1.0.0
 // @note         2017-01-31初次建立 功能暂时够用
+// @note         2017-04-08修改增加未加速转码的视频一键提示转码
 // ==/UserScript==
 
 var jq = $.noConflict();
@@ -58,6 +60,30 @@ function ShowAllImage() {
     });
 }
 
+function speedUpVideo() {
+    jq('[ico="mp4"]').each(function (idx, ele) {
+        var $ele = jq(ele);
+        if ($ele.children('.file-type').attr('class').indexOf('tp-video') === -1) {
+            var pickCode = $ele.attr('pick_code');
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url: 'http://115.com/?ct=play&ac=push',
+                data: "op=vip_push&pickcode=" + pickCode,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                onload: function (response) {
+                    var xdata = eval('(' + response.responseText + ')');
+                    //console.info(response.responseText);
+                    if (xdata.state) {
+                        notie($ele.attr('title') + ' 加速成功', {type: 'success'});
+                    }
+                }
+            });
+        }
+    })
+}
+
 function imgWrapOpen(tpz,bt) {
     var resultContent = '<div class="xximg-wrap">';
     jq.each(tpz, function (idx, value) {
@@ -97,8 +123,9 @@ function setGmValue(){
 
 jq(function () {
     if (self != top) {
-        jq('#js_filter_wrap_box').prepend('<div id="tools_sbdx" style="position: relative;float: left;bottom: 6px;"><button style="-webkit-appearance: none;font-size: 12px;text-shadow: none;line-height: 1.2;display: inline-block;border: 0;outline: 0;padding: 6px;margin: 0 10px 0 0;position: relative;border-radius: 3px;border: 1px solid #666;color: #666;cursor: POINTER;white-space: nowrap;text-overflow: ellipsis;text-decoration: none !important;cursor: pointer;text-align: center;font-weight: normal !important;background: transparent;">显示全部图片</button></div><div style="float: left;position: relative;bottom: 7px;"><input type="checkbox" id="qj-full-screen"/><label for="qj-full-screen">友好看图</label></div><div style="float: left;position: relative;bottom: 7px;"><input type="checkbox" id="qj-source-diagram"/><label for="qj-source-diagram">是否源图</label></div>');
-        jq('#tools_sbdx>button').on('click', ShowAllImage);
+        jq('#js_filter_wrap_box').prepend('<div id="tools_sbdx" style="position: relative;float: left;bottom: 6px;"><button style="-webkit-appearance: none;font-size: 12px;text-shadow: none;line-height: 1.2;display: inline-block;border: 0;outline: 0;padding: 6px;margin: 0 10px 0 0;position: relative;border-radius: 3px;border: 1px solid #666;color: #666;cursor: POINTER;white-space: nowrap;text-overflow: ellipsis;text-decoration: none !important;cursor: pointer;text-align: center;font-weight: normal !important;background: transparent;">加速所有视频</button><button style="-webkit-appearance: none;font-size: 12px;text-shadow: none;line-height: 1.2;display: inline-block;border: 0;outline: 0;padding: 6px;margin: 0 10px 0 0;position: relative;border-radius: 3px;border: 1px solid #666;color: #666;cursor: POINTER;white-space: nowrap;text-overflow: ellipsis;text-decoration: none !important;cursor: pointer;text-align: center;font-weight: normal !important;background: transparent;">显示全部图片</button></div><div style="float: left;position: relative;bottom: 7px;"><input type="checkbox" id="qj-full-screen"/><label for="qj-full-screen">友好看图</label></div><div style="float: left;position: relative;bottom: 7px;"><input type="checkbox" id="qj-source-diagram"/><label for="qj-source-diagram">是否源图</label></div>');
+        jq('#tools_sbdx>button:nth-child(2)').on('click', ShowAllImage);
+        jq('#tools_sbdx>button:nth-child(1)').on('click', speedUpVideo);
         jq('#qj-full-screen').prop('checked',GM_getValue('qjFullScreen', true)).change(setGmValue);
         jq('#qj-source-diagram').prop('checked',GM_getValue('qjSourceDiagram', true)).change(setGmValue);
     }
