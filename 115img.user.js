@@ -30,7 +30,7 @@ var notie=function(t){function e(n){if(o[n])return o[n].exports;var i=o[n]={expo
 
 function ShowAllImage() {
     var imgLength = jq('[rel="item"][ico="jpg"],[rel="item"][ico="gif"],[rel="item"][ico="png"]').length;
-    console.info('长度为' + imgLength);
+    console.info('>>>>>115 helper 图片长度为' + imgLength);
     var imgAry = new Array(imgLength);
     var bTitle = jq('.file-path>a:last-child').text();
     jq('[rel="item"][ico="jpg"],[rel="item"][ico="gif"],[rel="item"][ico="png"]').each(function (idx, ele) {
@@ -47,19 +47,16 @@ function ShowAllImage() {
             url: 'https://webapi.115.com/files/image?pickcode=' + pickcode,
             onload: function (response) {
                 var xdata = eval('(' + response.responseText + ')');
-                // console.info(typeof response.responseText);
                 var imgUrl = '';
                 if(GM_getValue('qjSourceDiagram', true)){
                     imgUrl = xdata.data.source_url;
                 }else {
                     imgUrl = xdata.data.url;
                 }
-                console.info(idx + '  ' + imgUrl);
                 imgAry[idx].url = imgUrl;
                 imgLength = imgLength - 1;
                 if (imgLength === 0) {
-                    console.info('完成了!');
-                    imgWrapOpen(imgAry,bTitle);
+                    imgWrapOpenBridge(imgAry,bTitle);
                 }
             }
         });
@@ -80,7 +77,6 @@ function speedUpVideo() {
                 },
                 onload: function (response) {
                     var xdata = eval('(' + response.responseText + ')');
-                    //console.info(response.responseText);
                     if (xdata.state) {
                         notie($ele.attr('title') + ' 加速成功', {type: 'success'});
                     }
@@ -90,7 +86,7 @@ function speedUpVideo() {
     })
 }
 
-function imgWrapOpen(tpz,bt) {
+function imgWrapOpenBridge(tpz,bt) {
     var resultContent = '<div class="xximg-wrap">';
     jq.each(tpz, function (idx, value) {
         var titleContent = '<div class="xximg-item"><h3 class="xxxtitle">' + tpz[idx].title + '</h3>',
@@ -98,33 +94,22 @@ function imgWrapOpen(tpz,bt) {
         resultContent = resultContent + titleContent + imgContent;
     });
     resultContent = resultContent + '</div>';
-    if(GM_getValue('qjFullScreen', true)){
-        // jq('#js_iframes_box',window.parent.document).addClass('frame-container-spread');
-        // jq('#js_main_container',window.parent.document).addClass('main-container-spread');
-        // jq('.view-width',window.parent.document).addClass('main-container-spread');
-        // jq('#js-main_leftUI',window.parent.document).addClass('main-container-spread');
-        // jq('.main-master',window.parent.document).addClass('main-container-spread');
-    }
-    GM_setValue("qjImgListDom", new Date().getTime());
+    GM_setValue("qjImgListDom", resultContent);
+    GM_setValue("qjImgDialogTitle", bt);
     setTimeout(() => {
         window.top.document.getElementById('js-out-hidden-bridge').click()
     }, 0)
-    return
+}
+
+function imgWrapOpen() {
+    var resultContent = GM_getValue('qjImgListDom')
+    var bt = GM_getValue('qjImgDialogTitle')
     var index = window.top.layer.open({
         type: 1,
         title: bt,
         content: resultContent,
         area: ['320px', '195px'],
-        maxmin: true,
-        cancel: function(){
-            // if(GM_getValue('qjFullScreen', true)){
-            //     jq('#js_iframes_box',window.parent.document).removeClass('frame-container-spread');
-            //     jq('#js_main_container',window.parent.document).removeClass('main-container-spread');
-            //     jq('.view-width',window.parent.document).removeClass('main-container-spread');
-            //     jq('#js-main_leftUI',window.parent.document).removeClass('main-container-spread');
-            //     jq('.main-master',window.parent.document).removeClass('main-container-spread');
-            // }
-        }
+        maxmin: true
     });
     window.top.layer.full(index);
 }
@@ -232,19 +217,8 @@ function waitForKeyElements(
 
 waitForKeyElements('div#js-main_leftUI', CreateSha1ButtonForSelectedItems);
 
-function test() {
-    var content = GM_getValue('qjImgListDom', '自定义HTML内容')
-    layer.open({
-        type: 1,
-        title: false,
-        closeBtn: 0,
-        shadeClose: true,
-        content
-    });
-}
-
 function CreateSha1ButtonForSelectedItems(element) {
     if (document.getElementById('js-out-hidden-bridge')) return;
     jq('#js-main_leftUI').append('<div id="js-out-hidden-bridge"></div>')
-    jq('#js-out-hidden-bridge').on('click', test);
+    jq('#js-out-hidden-bridge').on('click', imgWrapOpen);
 }    
