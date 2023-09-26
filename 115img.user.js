@@ -33,6 +33,29 @@ function ShowAllImage() {
     console.info('>>>>>115 helper 图片长度为' + imgLength);
     var imgAry = new Array(imgLength);
     var bTitle = jq('.file-path>a:last-child').text();
+    // 定义异步任务
+    function asyncTask(pickcode, idx) {
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: 'https://webapi.115.com/files/image?pickcode=' + pickcode,
+                onload: function (response) {
+                    var xdata = eval('(' + response.responseText + ')');
+                    var imgUrl = '';
+                    if(GM_getValue('qjSourceDiagram', true)){
+                        imgUrl = xdata.data.source_url;
+                    }else {
+                        imgUrl = xdata.data.url;
+                    }
+                    resolve(imgUrl);
+                    imgAry[idx].url = imgUrl;
+                }
+            });
+        });
+    }
+    const tasks = [];
+    const results = [];
+    let currentIndex = 0;
     jq('[rel="item"][ico="jpg"],[rel="item"][ico="gif"],[rel="item"][ico="png"]').each(function (idx, ele) {
         var $ele = jq(ele);
         var pickcode = $ele.attr('pick_code'),
@@ -42,25 +65,36 @@ function ShowAllImage() {
             'url': ''
         };
         imgAry[idx] = imgItem;
-        GM_xmlhttpRequest({
-            method: 'GET',
-            url: 'https://webapi.115.com/files/image?pickcode=' + pickcode,
-            onload: function (response) {
-                var xdata = eval('(' + response.responseText + ')');
-                var imgUrl = '';
-                if(GM_getValue('qjSourceDiagram', true)){
-                    imgUrl = xdata.data.source_url;
-                }else {
-                    imgUrl = xdata.data.url;
-                }
-                imgAry[idx].url = imgUrl;
-                imgLength = imgLength - 1;
-                if (imgLength === 0) {
-                    imgWrapOpenBridge(imgAry,bTitle);
-                }
+        tasks.push(() => asyncTask(pickcode, idx));
+    });
+    // 定义一个异步函数来执行任务
+    async function executeTasks() {
+        const concurrency = 15; // 同时执行的任务数    
+
+        async function runNextTask() {
+            const taskIndex = currentIndex++;
+            if (taskIndex >= tasks.length) {
+                return;
+            }
+
+            const task = tasks[taskIndex];
+            const result = await task();
+            results.push(result);
+        }
+
+        // 同时启动最多15个任务
+        Promise.all(Array(concurrency).fill(null).map(runNextTask)).then(() => {
+            if (results.length >= tasks.length) {
+                console.log("所有任务已完成");
+                console.log(imgAry);
+                imgWrapOpenBridge(imgAry,bTitle);
+            } else {
+                console.log('等待300毫秒');
+                setTimeout(executeTasks, 300); // 如果还有任务，则等待 300 毫秒后继续执行
             }
         });
-    });
+    }
+    executeTasks();
 }
 
 function speedUpVideo() {
