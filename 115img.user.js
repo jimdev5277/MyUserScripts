@@ -32,7 +32,7 @@ function ShowAllImage() {
     var imgLength = jq('[rel="item"][ico="jpg"],[rel="item"][ico="gif"],[rel="item"][ico="png"]').length;
     console.info('>>>>>115 helper 图片长度为' + imgLength);
     var imgAry = new Array(imgLength);
-    var bTitle = jq('.file-path>a:last-child').text();
+    var bTitle = jq('.file-path>a:last-child>span').html();
     // 定义异步任务
     function asyncTask(pickcode, idx) {
         return new Promise((resolve) => {
@@ -132,7 +132,7 @@ function imgWrapOpenBridge(tpz,bt) {
     GM_setValue("qjImgDialogTitle", bt);
     setTimeout(() => {
         window.top.document.getElementById('js-out-hidden-bridge').click()
-    }, 0)
+    }, 600)
 }
 
 function imgWrapOpen() {
